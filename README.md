@@ -66,3 +66,87 @@ The stage 2 payload establishes a connection to a C2 server at the domain resolv
 <img src="https://i.imgur.com/m0u6ibZ.png" height="80%" width="80%" alt="c2domain"/>
 <img src="https://i.imgur.com/rDcwcoS.png" height="80%" width="80%" alt="c2port"/>
 
+### Initial Access - Malicious Document Traffic 
+Based on the collected findings, we discovered that the attacker fetched the stage 2 payload remotely:
+- We discovered the Domain and IP invoked by the malicious document on Sysmon logs.
+- There is another domain and IP used by the stage 2 payload logged from the same data source.
+
+I used Wireshark to analyze the capture file, filtering for HTTP packets containing 'GET' requests and the domain 'phishteam.xyz' identified earlier. This led me to find the URL of the malicious payload embedded in the document.
+<p align="center">
+<img src="https://i.imgur.com/C32ds4S.png" height="80%" width="80%" alt="url"/>
+
+The attacker used Base64 encoding for the C2 connection. The malicious C2 binary sends payloads via the 'q' parameter, which contains the results of executed commands. It connects to the specific URL '/9ab62b5' to retrieve commands for execution, using the 'GET' HTTP method. The user agent string revealed that the binary was compiled using the Nim programming language. 
+<p align="center">
+<img src="https://i.imgur.com/hhttitd.png" height="80%" width="80%" alt="basec2"/>
+
+### Discovery - Internal Reconnaissance 
+Based on the collected findings, we have discovered that the malicious binary continuously uses the C2 traffic:
+- We can easily decode the encoded string in the network traffic.
+- The traffic contains the command and output executed by the attacker.
+
+The attacker managed to locate a sensitive file on the user's machine. By decoding several of the Base64-encoded commands, I eventually uncovered the password for the file.
+<p align="center">
+<img src="https://i.imgur.com/Mj9GO53.png" height="80%" width="80%" alt="basepassword"/>
+
+The attacker proceeded to enumerate the list of listening ports on the machine. By further decoding the Base64-encoded commands, I identified the specific listening port that could be used to establish a remote shell on the machine. 
+<p align="center">
+<img src="https://i.imgur.com/xB164S8.png" height="80%" width="80%" alt="listeningport"/>
+
+The attacker then set up a reverse SOCKS proxy to access internal services hosted on the machine. By searching for 'socks,' I located the command the attacker used to establish the connection. 
+<p align="center">
+<img src="https://i.imgur.com/tOzEM3m.png" height="80%" width="80%" alt="socks"/>
+
+By using the SHA-256 hash of the binary used by the attacker to establish the reverse SOCKS proxy, I can search VirusTotal to identify the tool's name. 
+<p align="center">
+<img src="https://i.imgur.com/LgdNXU0.png" height="80%" width="80%" alt="socksvirustotal"/>
+
+The attacker then utilized the harvested credentials from the machine. Based on the subsequent process following the execution of the SOCKS proxy, the attacker authenticated using the WinRM service.
+<p align="center">
+<img src="https://i.imgur.com/oX2PGqj.png" height="80%" width="80%" alt="winrm"/>
+
+### Privilege Escalation - Exploiting Privileges 
+Based on the collected findings, the attacker gained a stable shell through a reverse socks proxy.
+
+After identifying the current user's privileges, the attacker downloaded another binary for privilege escalation. I discovered the binary ‘spf.exe’ and the SHA-256 hash by tracing the child process of wsmprovhost.exe. 
+<p align="center">
+<img src="https://i.imgur.com/22MHE4z.png" height="80%" width="80%" alt="spf.exe"/>
+
+Using the SHA-256 hash of the binary, I identified the tool as PrintSpoofer.
+<p align="center">
+<img src="https://i.imgur.com/FQzDXqR.png" height="80%" width="80%" alt="printspoofer"/>
+
+The tool exploits a specific user privilege known as SeImpersonatePrivilege. 
+<p align="center">
+<img src="https://i.imgur.com/CwoZITO.png" height="80%" width="80%" alt="SeImpersonatePrivilege"/>
+
+The attacker then executed the tool alongside another binary to establish a C2 connection, which I had previously identified when discovering spf.exe. 
+<p align="center">
+<img src="https://i.imgur.com/t3udRWM.png" height="80%" width="80%" alt="final.exe"/>
+
+The binary connects to port 8080, which is different from the port used in the initial C2 connection.  
+<p align="center">
+<img src="https://i.imgur.com/2AA3v2W.png" height="80%" width="80%" alt="port8080"/>
+
+### Actions on Objective - Fully-owned Machine 
+Now, the attacker has gained administrative privileges inside the machine. I need to find all persistence techniques used by the attacker.
+
+In addition, the unusual executions are related to the malicious C2 binary used during privilege escalation.
+
+After gaining SYSTEM access, the attacker created two new user accounts. I identified these accounts by filtering the Windows logs for Event ID 4720. 
+<p align="center">
+<img src="https://i.imgur.com/Gr1JuFh.png" height="80%" width="80%" alt="4720"/>
+
+Prior to the successful creation of the accounts, the attacker executed commands that failed in the creation attempt due missing '/add' in the command. 
+<p align="center">
+<img src="https://i.imgur.com/nGs0p8s.png" height="80%" width="80%" alt="/add"/>
+
+The attacker added one of the accounts to the local administrators group. This action is reflected in Event ID 4732, which signals the addition of a user to a sensitive local group. 
+<p align="center">
+<img src="https://i.imgur.com/olG0Fyu.png" height="80%" width="80%" alt="admingroup"/>
+
+After creating the accounts, the attacker employed a technique to establish persistent administrative access. While there were two commands executed, only registry events from 'TempestUpdate2' were recorded. 
+<p align="center">
+<img src="https://i.imgur.com/4e8W3MC.png" height="80%" width="80%" alt="persistancecommand"/>
+<img src="https://i.imgur.com/8YduyMf.png" height="80%" width="80%" alt="persistancecommand2"/>
+
+## Summary

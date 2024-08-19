@@ -150,3 +150,4 @@ After creating the accounts, the attacker employed a technique to establish pers
 <img src="https://i.imgur.com/8YduyMf.png" height="80%" width="80%" alt="persistancecommand2"/>
 
 ## Summary
+Drawing on my experience with Windows Event Logs, Sysmon, Wireshark, and Brim from previous exercises, I found this challenge to be a valuable opportunity to apply and reinforce what I've learned. 

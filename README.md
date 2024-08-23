@@ -3,7 +3,7 @@
 ## Introduction
 This lab aims to introduce the process of analysing endpoint and network logs from a compromised asset. Given the artefacts, we will aim to uncover the incident from the Tempest machine. In this scenario, I will be tasked to be one of the Incident Responders that will focus on handling and analysing the captured artefacts of a compromised machine. 
 
-## Walkthrough
+## Walk-through
 ### Initial Access - Malicious Document
 
 Before starting the log analysis, I generated the SHA-256 hash for each file.
@@ -150,4 +150,4 @@ After creating the accounts, the attacker employed a technique to establish pers
 <img src="https://i.imgur.com/8YduyMf.png" height="80%" width="80%" alt="persistancecommand2"/>
 
 ## Summary
-Drawing on my experience with Windows Event Logs, Sysmon, Wireshark, and Brim from previous exercises, I found this challenge to be a valuable opportunity to apply and reinforce what I've learned. 
+The TryHackMe "Tempest" challenge is an excellent way to develop and refine your cybersecurity skills, particularly in threat detection and incident response. It presents a realistic scenario that requires you to investigate and mitigate an ongoing attack. The challenge involves a variety of tasks, including network traffic analysis, log investigation, and malware identification, which are crucial for real-world cybersecurity operations. "Tempest" is highly engaging and provides hands-on experience with the tools and techniques needed to effectively respond to advanced threats, making it an invaluable training resource 
